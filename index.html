@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1B4332">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231B4332'/%3E%3Cpath d='M16 7 4 13l12 6 9-4.5V21h2v-8z' fill='%23fff'/%3E%3C/svg%3E">
+<title>SADaM — Sistem Administrasi Digital Madrasah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2.0">
+</head>
+<body>
+<noscript><p style="padding:24px;font-family:sans-serif">SADaM membutuhkan JavaScript. Aktifkan JavaScript di peramban Anda.</p></noscript>
+<div id="boot"><div class="spin" role="status" aria-label="Memuat"></div><div class="muted">Memuat SADaM…</div></div>
+
+<div id="login" class="hide">
+  <form class="login-card" onsubmit="doLogin();return false" autocomplete="on">
+    <div class="logo" id="loginLogo"><i class="bi bi-mortarboard-fill"></i></div>
+    <h1 id="loginName">SADaM</h1><p class="muted" id="loginSub" style="margin:2px 0 14px;text-align:center">Sistem Administrasi Digital Madrasah</p>
+    <div class="note hide" id="loginInfo" role="status"><i class="bi bi-info-circle"></i><span id="loginInfoTxt"></span></div>
+    <div class="errmsg hide" id="loginErr" role="alert" style="margin:0 0 8px;padding:8px 10px;background:var(--tunggak-bg);border-radius:8px"></div>
+    <label class="l" for="lgU" style="margin-top:0">Username</label>
+    <input class="in" id="lgU" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="username Anda">
+    <label class="l" for="lgP">Password</label>
+    <div class="search"><input class="in" id="lgP" name="password" type="password" autocomplete="current-password" placeholder="password" style="padding-left:12px;padding-right:38px"><button type="button" class="eye" onclick="togglePw()" aria-label="Tampilkan password"><i class="bi bi-eye" id="lgEye"></i></button></div>
+    <label class="chk"><input type="checkbox" id="lgR" checked> Tetap masuk di perangkat ini (30 hari)</label>
+    <button class="btn pri lg" id="lgBtn" type="submit">Masuk</button>
+    <p class="muted sm" style="text-align:center;margin:12px 0 0">Lupa password? <a style="color:var(--primary);cursor:pointer;font-weight:600" onclick="lupaForm()">Minta reset</a></p>
+  </form>
+</div>
+
+<div id="app" class="hide">
+  <div class="scrim" id="scrim" onclick="toggleMenu(false)"></div>
+  <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
+    <div class="brand"><div class="logo" id="brandLogo"><i class="bi bi-mortarboard-fill"></i></div><div style="min-width:0"><b id="brandName">SADaM</b><small id="brandSub">Sistem Administrasi Digital Madrasah</small></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="me"><div class="avatar" id="meAv">?</div><div class="grow"><b id="meNama">—</b><span class="role-tag" id="meRole">—</span></div>
+      <button class="ic-btn" style="background:transparent;border-color:rgba(255,255,255,.2);color:#fff" onclick="toggleTheme()" title="Mode gelap" aria-label="Ganti tema"><i class="bi bi-moon-stars"></i></button><button class="ic-btn" style="background:transparent;border-color:rgba(255,255,255,.2);color:#fff" onclick="doLogout()" title="Keluar" aria-label="Keluar"><i class="bi bi-box-arrow-right"></i></button></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="ic-btn menu-btn" onclick="toggleMenu(true)" aria-label="Buka menu"><i class="bi bi-list"></i></button>
+      <div class="crumb"><span class="x">SADaM</span><i class="bi bi-chevron-right x"></i><span class="x">Operasional</span><i class="bi bi-chevron-right x"></i><b id="crumbNow">Dashboard</b></div>
+      <div class="grow"></div>
+      <span class="chip hide-m"><i class="bi bi-calendar3"></i><span id="taLbl">T.A. —</span></span>
+      <select class="chip" id="bulanSel" onchange="setBulan(this.value)" aria-label="Periode bulan"></select>
+      <span class="chip sync" id="syncChip"><i class="bi bi-circle-fill" style="font-size:7px"></i><span id="syncTxt">Disinkronkan</span></span>
+      <button class="ic-btn" onclick="openDisplay()" title="Tampilan" aria-label="Pengaturan tampilan"><i class="bi bi-sliders"></i></button>
+      <button class="ic-btn" onclick="refreshNow(true)" title="Segarkan data" aria-label="Segarkan data"><i class="bi bi-arrow-repeat"></i></button>
+    </header>
+    <main class="page">
+      <section class="sec" id="s-dashboard"></section>
+      <section class="sec" id="s-pembayaran"></section>
+      <section class="sec" id="s-seragam"></section>
+      <section class="sec" id="s-pengeluaran"></section>
+      <section class="sec" id="s-tagihan"></section>
+      <section class="sec" id="s-pengingat"></section>
+      <section class="sec" id="s-rekap"></section>
+      <section class="sec" id="s-laporan"></section>
+      <section class="sec" id="s-master"></section>
+      <section class="sec" id="s-pengaturan"></section>
+      <section class="sec" id="s-audit"></section>
+    </main>
+  </div>
+</div>
+
+<!-- Modal umum (pratinjau kwitansi, konfirmasi, form) — tidak pernah membuka tab baru -->
+<div class="modal-bg" id="mbg" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" role="dialog" aria-modal="true"><header><h3 id="mTitle"></h3><button class="ic-btn" onclick="closeModal()" aria-label="Tutup"><i class="bi bi-x-lg"></i></button></header><div class="body" id="mBody"></div><footer id="mFoot"></footer></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="printRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="js/config.js?v=2.0"></script>
+<script src="js/api.js?v=2.0"></script>
+<script src="js/app.js?v=2.0"></script>
+</body>
+</html>
