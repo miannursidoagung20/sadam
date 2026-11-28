@@ -20,7 +20,8 @@ const bulanLbl = ym => { const t = ym.split('-'); return BLN[Number(t[1]) - 1] +
 const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
 /** id acak (kepala acak, ekor waktu): aman dari tabrakan walau data dibuat berurutan dengan cepat */
 /** Versi berkas tampilan (JavaScript.html). Harus sama dengan APP_VERSI di Kode.gs. */
-const APP_VERSI = '2.0';
+const APP_VERSI = '2.1';   // versi tampilan (frontend)
+const API_MIN = '2.0';     // versi backend (Kode.gs) minimum yang dibutuhkan frontend ini
 const uuid = () => 'x' + (Math.random().toString(36) + '00000000').slice(2, 10) + Date.now().toString(36).slice(-4);
 const clone = o => JSON.parse(JSON.stringify(o));
 const initials = n => String(n || '?').split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -39,7 +40,7 @@ const NAV = [
   { g: 'OPERASIONAL' },
   { id: 'dashboard', t: 'Dashboard', i: 'bi-grid', r: ['Super Admin', 'Bendahara', 'Wali Kelas', 'Kepala Madrasah'] },
   { id: 'pembayaran', t: 'Pembayaran', i: 'bi-receipt', r: ['Super Admin', 'Bendahara'] },
-  { id: 'seragam', t: 'Seragam', i: 'bi-bag', r: ['Super Admin', 'Bendahara'] },
+  { id: 'seragam', hide: true, par: 'pembayaran', t: 'Seragam', i: 'bi-bag', r: ['Super Admin', 'Bendahara'] },
   { id: 'pengeluaran', t: 'Pengeluaran', i: 'bi-wallet2', r: ['Super Admin', 'Bendahara'] },
   { id: 'tagihan', t: 'Tagihan & Tunggakan', i: 'bi-exclamation-circle', r: ['Super Admin', 'Bendahara', 'Wali Kelas', 'Kepala Madrasah'], badge: true },
   { id: 'pengingat', t: 'Pengingat (WA)', i: 'bi-chat-left-text', r: ['Super Admin', 'Bendahara'] },
@@ -326,12 +327,8 @@ function akunBlock() { return '<label class="l">Akun: <b>' + esc(S.user.nama) + 
 /** Peringatan bila Kode.gs dan JavaScript.html tidak sama versinya (pembaruan tertinggal/terpasang sebagian). Muncul sekali per sesi tab. */
 const cmpVer = (a, b) => { const x = String(a || '0').split('.').map(Number), y = String(b || '0').split('.').map(Number); for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
 function cekVersi() {
-  if (!S.user || S.versiServer === APP_VERSI) return; const tanda = (S.versiServer || 'lama') + '|' + APP_VERSI; try { if (sessionStorage.getItem('sadam_ver') === tanda) return; sessionStorage.setItem('sadam_ver', tanda); } catch (e) {}
-  const srvLama = cmpVer(S.versiServer, APP_VERSI) < 0;
-  const langkah = srvLama
-    ? '<li>Buka proyek <b>Apps Script</b>, ganti seluruh isi <b>Kode.gs</b> dengan berkas terbaru.</li><li><b>Deploy → Manage deployments → ✏ → Version: New version → Deploy</b> (alamat /exec tidak berubah).</li><li>Muat ulang halaman ini (<b>Ctrl+Shift+R</b>).</li>'
-    : '<li>Perbarui <b>frontend</b> di GitHub: di folder repositori jalankan <code>git add .</code>, <code>git commit -m "update"</code>, lalu <code>git push</code>.</li><li>Tunggu ±1 menit sampai GitHub Pages selesai, lalu muat ulang halaman ini (<b>Ctrl+Shift+R</b>).</li>';
-  openModal('Pembaruan belum lengkap', '<div class="note" style="background:var(--sebagian-bg);align-items:flex-start"><i class="bi bi-exclamation-triangle"></i><span>Versi <b>frontend</b> (GitHub Pages): <b>v' + esc(APP_VERSI) + '</b> · versi <b>backend</b> (Apps Script): <b>' + esc(S.versiServer ? 'v' + S.versiServer : 'lama') + '</b>.<br>Salah satu bagian belum diperbarui, sehingga sebagian fitur baru bisa tidak muncul atau gagal.</span></div><ol class="sm" style="padding-left:18px;margin:10px 0 0">' + langkah + '</ol>', '<button class="btn pri" onclick="closeModal()">Mengerti</button>');
+  if (!S.user || cmpVer(S.versiServer, API_MIN) >= 0) return; const tanda = (S.versiServer || 'lama') + '|' + APP_VERSI; try { if (sessionStorage.getItem('sadam_ver') === tanda) return; sessionStorage.setItem('sadam_ver', tanda); } catch (e) {}
+  openModal('Pembaruan belum lengkap', '<div class="note" style="background:var(--sebagian-bg);align-items:flex-start"><i class="bi bi-exclamation-triangle"></i><span>Versi <b>backend</b> (Apps Script): <b>' + esc(S.versiServer ? 'v' + S.versiServer : 'lama') + '</b>. Frontend ini (<b>v' + esc(APP_VERSI) + '</b>) membutuhkan backend minimal <b>v' + esc(API_MIN) + '</b>, sehingga sebagian fitur bisa tidak muncul atau gagal.</span></div><ol class="sm" style="padding-left:18px;margin:10px 0 0"><li>Buka proyek <b>Apps Script</b>, ganti seluruh isi <b>Kode.gs</b> dengan berkas terbaru.</li><li><b>Deploy → Manage deployments → ✏ → Version: New version → Deploy</b> (alamat /exec tidak berubah).</li><li>Muat ulang halaman ini (<b>Ctrl+Shift+R</b>).</li></ol>', '<button class="btn pri" onclick="closeModal()">Mengerti</button>');
 }
 /** Layar "Cek koneksi server" (di bawah formulir login): ping ke backend + penjelasan bila gagal (alamat salah, akses bukan Anyone, offline, dll.). */
 function initCekKoneksi() { const p = document.querySelector('.login-card'); if (!p || $('lgCek')) return; const e = document.createElement('p'); e.id = 'lgCek'; e.className = 'muted sm'; e.style.cssText = 'text-align:center;margin:8px 0 0'; e.innerHTML = '<a style="color:var(--primary);cursor:pointer" onclick="cekKoneksi()">Cek koneksi server</a>'; p.appendChild(e); }
@@ -339,7 +336,7 @@ function cekKoneksi() {
   openModal('Cek koneksi server', '<div id="ckBody" class="sm">Memeriksa…</div>', '<button class="btn" onclick="cekKoneksi()"><i class="bi bi-arrow-repeat"></i>Periksa lagi</button><button class="btn pri" onclick="closeModal()">Tutup</button>');
   const put = (ok, html) => { const e = $('ckBody'); if (e) e.innerHTML = '<div class="note" style="background:var(--' + (ok ? 'lunas' : 'tunggak') + '-bg);align-items:flex-start"><i class="bi bi-' + (ok ? 'check-circle-fill' : 'x-octagon') + '"></i><span>' + html + '</span></div>'; };
   let u = ''; try { u = gasUrl(); } catch (e) { return put(false, esc(e.message)); }
-  gasPing().then(r => { const sama = r.versi === APP_VERSI; put(sama, 'Terhubung ke server (' + esc(r.app || 'SADaM') + ') dalam <b>' + r.ms + ' ms</b>.<br>Versi frontend <b>v' + esc(APP_VERSI) + '</b> · versi backend <b>' + esc(r.versi ? 'v' + r.versi : 'lama') + '</b>' + (sama ? ' — sinkron.' : ' — <b>tidak sama</b>; lihat petunjuk pembaruan di panduan.')); }).catch(e => put(false, esc(e.message) + '<div class="muted sm" style="margin-top:6px">Alamat: ' + esc(u.slice(0, 48)) + '…</div>'));
+  gasPing().then(r => { const sama = cmpVer(r.versi, API_MIN) >= 0; put(sama, 'Terhubung ke server (' + esc(r.app || 'SADaM') + ') dalam <b>' + r.ms + ' ms</b>.<br>Versi frontend <b>v' + esc(APP_VERSI) + '</b> · versi backend <b>' + esc(r.versi ? 'v' + r.versi : 'lama') + '</b>' + (sama ? ' — kompatibel (sinkron).' : ' — <b>tidak sama</b>: backend terlalu lama (minimal v' + esc(API_MIN) + '); lihat petunjuk pembaruan di panduan.')); }).catch(e => put(false, esc(e.message) + '<div class="muted sm" style="margin-top:6px">Alamat: ' + esc(u.slice(0, 48)) + '…</div>'));
 }
 function setZoom(z) { try { localStorage.setItem('sadam_zoom', z); } catch (e) {} applyZoom(); openDisplay(); }
 function setTema(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem('sadam_theme', t); } catch (e) {} applyBrand(); if (S.page === 'dashboard' && RENDER.dashboard.upd) RENDER.dashboard.upd(); openDisplay(); }
@@ -519,7 +516,7 @@ const RENDER = {};
 function go(p, opts) {
   const n = NAV.find(x => x.id === p); if (!n || !n.r.includes(S.user.peran) || !modOn(p)) { toast('Halaman tidak tersedia untuk peran Anda.', 'err'); return; }
   S.page = p; document.querySelectorAll('.sec').forEach(s => s.classList.toggle('on', s.id === 's-' + p));
-  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.p === p));
+  const pn = n.par || p; document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.p === pn)); setBnavActive(pn);
   $('crumbNow').textContent = n.t; toggleMenu(false);
   if (!S.rendered[p]) { RENDER[p](opts || {}); S.rendered[p] = 1; } else if (RENDER[p].upd) RENDER[p].upd(opts || {});
   window.scrollTo(0, 0); try { localStorage.setItem('sadam_page', p); } catch (e) {}
@@ -528,11 +525,30 @@ function renderNav() {
   const hasT = S.user.peran !== 'Kepala Madrasah' || true;
   $('nav').innerHTML = NAV.map(n => {
     if (n.g) return (n.sa && S.user.peran !== 'Super Admin') ? '' : '<h6>' + n.g + (n.sa ? '<span class="badge-sa">Super Admin</span>' : '') + '</h6>';
-    if (!n.r.includes(S.user.peran) || !modOn(n.id)) return '';
+    if (n.hide || !n.r.includes(S.user.peran) || !modOn(n.id)) return '';
     return '<a role="button" tabindex="0" data-p="' + n.id + '" onclick="go(\'' + n.id + '\')" onkeydown="if(event.key===\'Enter\')go(\'' + n.id + '\')"><i class="bi ' + n.i + '"></i><span>' + n.t + '</span>' + (n.badge ? '<span class="pill-n" id="navBadge">0</span>' : '') + (n.badge2 ? '<span class="pill-n hide" id="navBadge2" title="Permintaan reset password">0</span>' : '') + '</a>';
   }).join('');
-  $('meNama').textContent = S.user.nama; $('meAv').textContent = initials(S.user.nama); $('meRole').textContent = S.user.peran;
+  $('meNama').textContent = S.user.nama; $('meAv').textContent = initials(S.user.nama); $('meRole').textContent = S.user.peran; renderBnav();
 }
+/* ───────── Menu bawah (HP) & tab Bayar ───────── */
+/** menu bawah per peran, mengikuti hak akses; menu lain lewat tombol ☰ */
+const BNAV = { 'Super Admin': ['dashboard', 'pembayaran', 'tagihan', 'rekap', 'pengeluaran'], 'Bendahara': ['dashboard', 'pembayaran', 'tagihan', 'rekap', 'pengeluaran'], 'Kepala Madrasah': ['dashboard', 'tagihan', 'rekap', 'laporan'], 'Wali Kelas': ['dashboard', 'tagihan', 'rekap'] };
+const BNAV_LBL = { dashboard: ['Beranda', 'bi-house'], pembayaran: ['Bayar', 'bi-receipt'], tagihan: ['Tagihan', 'bi-exclamation-circle'], rekap: ['Rekap', 'bi-journal-check'], pengeluaran: ['Pengeluaran', 'bi-wallet2'], laporan: ['Laporan', 'bi-file-earmark-text'] };
+function renderBnav() {
+  let el = $('bnav'); if (!el) { const ap = $('app'); if (!ap || !ap.appendChild) return; el = document.createElement('nav'); el.id = 'bnav'; el.className = 'bnav'; el.setAttribute('aria-label', 'Menu utama'); ap.appendChild(el); }
+  const ids = (BNAV[S.user.peran] || []).filter(id => { const n = NAV.find(x => x.id === id); return n && n.r.includes(S.user.peran) && modOn(id); });
+  el.innerHTML = ids.map(id => '<a role="button" tabindex="0" data-p="' + id + '" onclick="go(\'' + id + '\')" onkeydown="if(event.key===\'Enter\')go(\'' + id + '\')"><i class="bi ' + BNAV_LBL[id][1] + '"></i><span>' + BNAV_LBL[id][0] + '</span>' + (id === 'tagihan' ? '<span class="pill-n hide" id="bnavBadge">0</span>' : '') + '</a>').join('');
+  setBnavActive(S.page); mirrorBadge();
+}
+function setBnavActive(p) { const n = NAV.find(x => x.id === p), pn = (n && n.par) || p; document.querySelectorAll('#bnav a').forEach(a => a.classList.toggle('on', a.dataset.p === pn)); }
+function mirrorBadge() { const a = $('navBadge'), b = $('bnavBadge'); if (a && b) { b.textContent = a.textContent; b.classList.toggle('hide', !(Number(a.textContent) > 0)); } }
+/** tab [Tagihan | Seragam] di atas halaman Bayar; siswa terpilih ikut berpindah */
+function bayarTabs(aktif) {
+  if (!modOn('seragam') || !modOn('pembayaran')) return '';
+  const b = (id, t) => '<button role="tab" aria-selected="' + (aktif === id) + '" class="' + (aktif === id ? 'on' : '') + '" onclick="bayarTab(\'' + id + '\')">' + t + '</button>';
+  return '<div class="bayar-tabs" role="tablist" aria-label="Jenis transaksi">' + b('pembayaran', 'Tagihan') + b('seragam', 'Seragam') + '</div>';
+}
+function bayarTab(ke) { const sid = ke === 'seragam' ? P.sid : U.sid; go(ke, sid ? { sid: sid } : undefined); }
 function toggleMenu(o) { $('sidebar').classList.toggle('open', o); $('scrim').classList.toggle('on', o); }
 function toggleTheme() { setTema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); closeModal(); }
 function setBulan(v) { S.bulan = v; try { localStorage.setItem('sadam_bulan', v); } catch (e) {} Object.keys(S.rendered).forEach(k => delete S.rendered[k]); RENDER[S.page](); S.rendered[S.page] = 1; }
@@ -547,7 +563,7 @@ function applyData(d) {
   reindex(); updBadges(); $('taLbl').textContent = 'T.A. ' + (S.cfg.tahunAktif || ''); applyBrand();
 }
 function saveSnap(d) { try { localStorage.setItem('sadam_snap', JSON.stringify({ u: d.user.username, d: d })); } catch (e) { try { localStorage.removeItem('sadam_snap'); } catch (x) {} } }
-function updBadges() { const nb = $('navBadge'); if (nb) nb.textContent = menunggak().length; const n2 = $('navBadge2'); if (n2) { const rr = resetList().length; n2.textContent = rr; n2.classList.toggle('hide', !rr); } }
+function updBadges() { const nb = $('navBadge'); if (nb) nb.textContent = menunggak().length; const n2 = $('navBadge2'); if (n2) { const rr = resetList().length; n2.textContent = rr; n2.classList.toggle('hide', !rr); } mirrorBadge(); }
 const resetList = () => (S.live && S.live.reset) || (S.m.pengguna || []).filter(u => u.minta_reset).map(u => u.username);
 function softUpdate() { reindex(); updBadges(); Object.keys(S.rendered).forEach(k => { if (k !== S.page) delete S.rendered[k]; }); if (S.page && RENDER[S.page]) { if (RENDER[S.page].upd) RENDER[S.page].upd(); else RENDER[S.page](); } }
 function setLive(l) { if (l) { S.live = l; sigSync(); softUpdate(); persist(); } }
@@ -753,7 +769,7 @@ const P = { sid: null, sel: {}, suk: [], donor: false, donorNama: '', metode: 'T
 function payDraftSave() { try { localStorage.setItem('sadam_draft_pay', JSON.stringify({ sid: P.sid, sel: P.sel, suk: P.suk, donor: P.donor, donorNama: P.donorNama, metode: P.metode, ket: $('pKet') ? $('pKet').value : '', tgl: $('pTgl') ? $('pTgl').value : '', idTrx: P.idTrx })); } catch (e) {} }
 RENDER.pembayaran = function (o) {
   const g = groupKwitansi(), td = todayStr();
-  $('s-pembayaran').innerHTML = pageHead('Pencatatan Pembayaran &amp; Kwitansi', 'Kelola pembayaran SPP, infak, seragam, dan pembiayaan madrasah dengan cetak kwitansi instan.', '<span class="chip"><i class="bi bi-receipt"></i>Hari ini: <b id="pHari">0</b></span>' + (S.user.peran === 'Super Admin' ? '<span class="chip"><i class="bi bi-shield-check"></i>Mode Super Admin</span>' : '<span class="chip"><i class="bi bi-shield-check"></i>Mode Bendahara</span>'), 'POS AKTIF') +
+  $('s-pembayaran').innerHTML = pageHead('Pencatatan Pembayaran &amp; Kwitansi', 'Kelola pembayaran SPP, infak, seragam, dan pembiayaan madrasah dengan cetak kwitansi instan.', '<span class="chip"><i class="bi bi-receipt"></i>Hari ini: <b id="pHari">0</b></span>' + (S.user.peran === 'Super Admin' ? '<span class="chip"><i class="bi bi-shield-check"></i>Mode Super Admin</span>' : '<span class="chip"><i class="bi bi-shield-check"></i>Mode Bendahara</span>'), 'POS AKTIF') + bayarTabs('pembayaran') +
     '<div class="grid g-main"><div><div class="card"><div class="row" style="justify-content:space-between"><h3><span class="mono-av" style="display:inline-grid;width:24px;height:24px;font-size:12px;margin-right:8px;vertical-align:middle">1</span>Entri Kasir Pembayaran</h3><span class="mono sm muted">FORM-REV-4</span></div>' +
     '<label class="l">Cari Siswa Terdaftar / NISN</label>' + stuPicker('pay') + '<label class="chk hide" id="pDonLbl"><input type="checkbox" id="pDonor" onchange="setDonor(this.checked)"> Donatur luar (bukan siswa/wali)</label><div id="pDonBox" class="hide"><input class="in" id="pDonNama" placeholder="Nama donatur, mis. Hamba Allah" oninput="P.donorNama=this.value;payDraftSave()"></div><div id="pStu"></div><div id="pBills"></div><div id="pSuk"></div>' +
     '<div class="grid g2"><div><label class="l" for="pTgl">Tanggal Bayar</label><input class="in" type="date" id="pTgl" value="' + td + '" oninput="payDraftSave()"></div><div><label class="l">Total Dibayar</label><div class="in mono" id="pTotal" style="display:flex;align-items:center;justify-content:flex-end;background:var(--canvas);font-weight:600">Rp 0</div></div></div>' +
@@ -892,8 +908,8 @@ function showLast(x) {
  * ============================================================ */
 const U = { sid: null, pick: {}, metode: 'Tunai', lunas: true, idTrx: uuid() };
 function seragamGroups() { const g = {}; S.m.seragam.forEach(i => { (g[i.nama] = g[i.nama] || []).push(i); }); return g; }
-RENDER.seragam = function () {
-  $('s-seragam').innerHTML = pageHead('Transaksi Pembelian Seragam', 'Pembelian dapat dipilih Set Lengkap, Atas Saja, atau Bawah Saja sesuai kebutuhan.', '', 'Logistik & Perlengkapan Siswa') +
+RENDER.seragam = function (o) {
+  $('s-seragam').innerHTML = pageHead('Transaksi Pembelian Seragam', 'Pembelian dapat dipilih Set Lengkap, Atas Saja, atau Bawah Saja sesuai kebutuhan.', '', 'Logistik & Perlengkapan Siswa') + bayarTabs('seragam') +
     '<div class="grid g-main" style="grid-template-columns:7fr 4fr"><div><div class="card"><h3>1. Identifikasi Siswa Pemesan</h3><div class="muted sm" style="margin-bottom:8px">Pilih siswa untuk asosiasi kwitansi dan audit logistik</div>' + stuPicker('srg') + '<div id="uStu"></div></div>' +
     '<div class="card" style="margin-top:16px"><h3>2. Pilih Item &amp; Kombinasi Potongan</h3><div class="tw" id="uItems" style="margin-top:8px"></div></div>' +
     '<div class="card" style="margin-top:16px"><h3>3. Pembayaran &amp; Catatan</h3><label class="l">Metode</label><div class="seg" id="uSeg"></div><div id="uInfo" style="margin-top:8px"></div>' +
@@ -902,9 +918,10 @@ RENDER.seragam = function () {
     '<button class="btn pri lg" style="margin-top:12px" id="uSave" onclick="saveSrg()"><i class="bi bi-printer"></i>Simpan &amp; Cetak Kwitansi Resmi</button><button class="btn lg" style="margin-top:8px" onclick="U.pick={};renderSrg()">Reset Formulir</button></div></div></div>' +
     '<div class="card tight" style="margin-top:16px"><div style="padding:8px 16px 12px"><h3>Riwayat Transaksi Seragam</h3></div><div class="tw" id="uHist"></div></div>';
   PICK.srg = s => { U.sid = s.id_siswa; const w = S.ix.wali[s.id_wali]; $('uStu').innerHTML = '<div class="stu"><div class="mono-av">' + initials(s.nama) + '</div><div><b>' + esc(s.nama) + '</b> <span class="cls">Kelas ' + esc(kelasNm(s.id_kelas)) + '</span><div class="mono sm muted">NISN: ' + esc(s.nisn) + '</div><div class="sm">Wali: ' + esc(w ? w.nama_wali : '-') + '</div></div></div>'; };
-  uMet(U.metode); uLunas(true); renderSrg(); RENDER.seragam.upd();
+  uMet(U.metode); uLunas(true); renderSrg(); RENDER.seragam.upd(o);
 };
-RENDER.seragam.upd = function () {
+RENDER.seragam.upd = function (o) {
+  if (o && o.sid && S.ix.siswa[o.sid]) { const sw = S.ix.siswa[o.sid], el = $('spi_srg'); if (el) el.value = sw.nama; PICK.srg(sw); }
   if (!$('uHist')) return; const g = groupKwitansi().filter(x => x.no.indexOf('SRG') > -1).slice(0, 8);
   $('uHist').innerHTML = g.length ? '<table class="t"><thead><tr><th>No. Kwitansi</th><th>Waktu</th><th>Siswa &amp; Kelas</th><th>Item</th><th class="right">Total</th><th>Metode</th><th>Status</th><th></th></tr></thead><tbody>' + g.map(x => '<tr class="' + (x.status !== 'aktif' ? 'void' : '') + '"><td class="id">' + esc(x.no) + '</td><td class="mono sm">' + tglID(x.tanggal) + ' ' + jam(x.tanggal) + '</td><td>' + esc(x.owner.nama) + ' <span class="cls">' + esc(x.owner.kelas) + '</span></td><td class="sm">' + esc(String(x.ket || '').split('|').slice(1).join('|').trim()) + '</td><td class="num">' + rp(x.total) + '</td><td>' + esc(x.metode) + '</td><td>' + stPill(x.status === 'dibatalkan' ? 'Dibatalkan' : 'Lunas', x.status === 'dibatalkan' ? 'Dibatalkan' : 'Tercatat') + '</td><td><button class="btn sm" onclick="openKwitansi(\'' + esc(x.no) + '\')"><i class="bi bi-eye"></i></button></td></tr>').join('') + '</tbody></table>' : emptyBox('bi-bag', 'Belum ada transaksi seragam.');
   if ($('uItems')) renderSrg();
